@@ -121,7 +121,7 @@ describe('when there are some blogs saved initially', () => {
 
             await api
                 .delete(`/api/blogs/${blogToDelete.id}`)
-                .expect(204)
+                .expect(204);
 
             const blogsAtEnd = await helper.blogsInDb();
 
@@ -140,52 +140,37 @@ describe('when there are some blogs saved initially', () => {
             assert.strictEqual(Object.prototype.hasOwnProperty.call(resultBlogs[0], 'id'), true);
         });
     });
-
-    
 });
 
 
 describe('update the likes of a blog', () => {
     test('a blog\'s likes are updated correctly', async () => {
-      const newBlog = {
-        title: 'New title',
-        url: 'new.url.com',
-        likes: 44, // New likes value
-      };
-  
-      // Get the initial list of blogs
-      const blogsAtStart = await helper.blogsInDb();
-      const blogToUpdate = blogsAtStart[0]; // Select the first blog to update
-  
-      // Update the blog's likes
-      await api
-        .put(`/api/blogs/${blogToUpdate.id}`)
-        .send(newBlog)
-        .expect(200); // Use 200 for successful updates
-  
-      // Get the updated list of blogs
-      const blogsAtTheEnd = await helper.blogsInDb();
-  
-      // Find the updated blog
-      const updatedBlog = blogsAtTheEnd.find((b) => b.id === blogToUpdate.id);
-  
-      // Verify that the likes were updated correctly
-      assert.strictEqual(updatedBlog.likes, 44);
+        const newBlog = {
+            title: 'New title',
+            url: 'new.url.com',
+            likes: 44, // New likes value
+        };
+
+        // Get the initial list of blogs
+        const blogsAtStart = await helper.blogsInDb();
+        const blogToUpdate = blogsAtStart[0]; // Select the first blog to update
+
+        // Update the blog's likes
+        await api
+            .put(`/api/blogs/${blogToUpdate.id}`)
+            .send(newBlog)
+            .expect(200); // Use 200 for successful updates
+
+        // Get the updated list of blogs
+        const blogsAtTheEnd = await helper.blogsInDb();
+
+        // Find the updated blog
+        const updatedBlog = blogsAtTheEnd.find((b) => b.id === blogToUpdate.id);
+
+        // Verify that the likes were updated correctly
+        assert.strictEqual(updatedBlog.likes, 44);
     });
-  });
-
-
-
-
-
-
-
-
-
-
-
-
-
+});
 
 after(async () => {
     await mongoose.connection.close();

@@ -19,6 +19,8 @@ describe('when there are some blogs saved initially', () => {
         await Blogs.insertMany(helper.initialBlogs);
     });
 
+    const token = 'generate new token and replace this dont push the token to github';
+
     test('blogs are returned as json', async () => {
         await api
             .get('/api/blogs')
@@ -50,6 +52,7 @@ describe('when there are some blogs saved initially', () => {
 
             await api
                 .post('/api/blogs')
+                .set('Authorization',`Bearer ${token}`)
                 .send(newBlog)
                 .expect(201)
                 .expect('Content-Type', /application\/json/);
@@ -69,8 +72,10 @@ describe('when there are some blogs saved initially', () => {
                 url: 'http://test.com'
             };
 
+
             await api
                 .post('/api/blogs')
+                .set('Authorization',`Bearer ${token}`)
                 .send(newBlog)
                 .expect(400);
 
@@ -86,8 +91,10 @@ describe('when there are some blogs saved initially', () => {
                 likes: 1
             };
 
+
             await api
                 .post('/api/blogs')
+                .set('Authorization',`Bearer ${token}`)
                 .send(newBlog)
                 .expect(400);
 
@@ -104,6 +111,7 @@ describe('when there are some blogs saved initially', () => {
 
             await api
                 .post('/api/blogs')
+                .set('Authorization',`Bearer ${token}`)
                 .send(newBlog)
                 .expect(400);
 
@@ -118,9 +126,10 @@ describe('when there are some blogs saved initially', () => {
         test('succeeds with status code 204 if id is valid', async () => {
             const blogsAtStart = await helper.blogsInDb();
             const blogToDelete = blogsAtStart[0];
-
+            console.log('blogs', blogsAtStart);
             await api
                 .delete(`/api/blogs/${blogToDelete.id}`)
+                .set('Authorization',`Bearer ${token}`)
                 .expect(204);
 
             const blogsAtEnd = await helper.blogsInDb();

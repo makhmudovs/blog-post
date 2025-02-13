@@ -1,4 +1,6 @@
 const logger = require('../utils/logger');
+const User = require('../models/user');
+const jwt = require('jsonwebtoken');
 
 const requestLogger = (req, res, next) => {
     logger.info('Method: ', req.method);
@@ -47,22 +49,39 @@ const tokenExtractor = (req, res, next) => {
     const authorization = req.get('authorization');
     if (authorization && authorization.startsWith('Bearer ')) {
         const token = authorization.replace('Bearer ', '');
-        req.token = token; // Attach the token to the request object
+        req.token = token;
     } else {
-        req.token = null; // Explicitly set token to null if not found
+        req.token = null;
     }
     next();
 };
 
-const userExtractor = (req, res, next) => {
-    // const authorization = req.get('authorization');
-    // if (authorization && authorization.startsWith('Bearer ')) {
-    //     const token = authorization.replace('Bearer ', '');
-    //     req.token = token; // Attach the token to the request object
-    // } else {
-    //     req.token = null; // Explicitly set token to null if not found
-    // }
-    // next();
+const userExtractor = async (req, res, next) => {
+
+    const token = req.token;
+
+    if (!token) {
+        return res.status(401).json({
+            error: 'Token invalid'
+        });
+    }
+    const decodedToken = jwt.verify(token, process.env.SECRET);
+
+    if (!decodedToken.id) {
+        return res.status(401).json({
+            error: 'Token invalid'
+        });
+    }
+
+    // Find the user and blog
+    const user = await User.findById(decodedToken.id);
+
+    if (user) {
+        req.user = user;
+    } else {
+        req.user = null;
+    }
+    next();
 };
 
 module.exports = {

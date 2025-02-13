@@ -1,7 +1,6 @@
 const blogRouter = require('express').Router();
 const Blog = require('../models/blog');
-const User = require('../models/user');
-const jwt = require('jsonwebtoken');
+const middleware = require('../middleware/middleware');
 
 // get blogposts
 blogRouter.get('/', async (req, res) => {
@@ -15,20 +14,25 @@ blogRouter.get('/', async (req, res) => {
 
 
 //new blog
-blogRouter.post('/', async (req, res) => {
+blogRouter.post('/',middleware.userExtractor, async (req, res) => {
     const body = req.body;
 
     const token = req.token;
 
-    if(!token){
-        return res.status(401).json({ error: 'Unauthorized: Token is missing' });
+    if (!token) {
+        return res.status(401).json({
+            error: 'Unauthorized: Token is missing'
+        });
     }
 
-    const decodedToken = jwt.verify(token, process.env.SECRET);
-    if (!decodedToken.id) {
-        return res.status(401).json({ error: 'token invalid' });
+    const user = req.user;
+
+    // Check if blog exists
+    if (!user) {
+        return res.status(404).json({
+            error: 'User not found'
+        });
     }
-    const user = await User.findById(decodedToken.id);
 
     const note = new Blog({
         title: body.title,
@@ -46,32 +50,48 @@ blogRouter.post('/', async (req, res) => {
 });
 
 //delete a specific blog when given the id
-blogRouter.delete('/:id', async (req, res) => {
+blogRouter.delete('/:id',middleware.userExtractor, async (req, res) => {
     const token = req.token;
 
-    if(!token){
-        return res.status(401).json({ error: 'Unauthorized: Token is missing' });
+    if (!token) {
+        return res.status(401).json({
+            error: 'Unauthorized: Token is missing'
+        });
     }
 
-    const decodedToken = jwt.verify(token, process.env.SECRET);
-    if (!decodedToken.id) {
-        return res.status(401).json({ error: 'token invalid' });
-    }
-
-
-    const user = await User.findById(decodedToken.id);
+    const user = req.user;
     const blog = await Blog.findById(req.params.id);
 
-    console.log('user ',user);
-    console.log('blog ',blog);
-    if(user._id.toString() === blog.user.toString()){
-        await Blog.findOneAndDelete(req.params.id);
-        user.blogs = user.blogs.filter(blog => blog._id !== req.params.id);
-        await user.save();
-        res.status(204).end();
-    }else{
-        return res.status(401).json({ error: 'not allowed to delete this blog' });
+    // Check if blog exists
+    if (!user) {
+        return res.status(404).json({
+            error: 'User not found'
+        });
     }
+
+    // Check if blog exists
+    if (!blog) {
+        return res.status(404).json({
+            error: 'Blog not found'
+        });
+    }
+
+    // Check if the user is the owner of the blog
+    if (user._id.toString() !== blog.user.toString()) {
+        return res.status(403).json({
+            error: 'Forbidden: You are not allowed to delete this blog'
+        });
+    }
+
+    // Delete the blog
+    await Blog.findByIdAndDelete(req.params.id);
+
+    // Remove the blog from the user's blogs array
+    user.blogs = user.blogs.filter(blog => blog._id.toString() !== req.params.id);
+    await user.save();
+
+    // Send success response
+    res.status(204).end();
 });
 
 //get a specific blog when given the id

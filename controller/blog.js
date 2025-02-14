@@ -105,18 +105,44 @@ blogRouter.get('/:id', async (req, res) => {
 });
 
 //update a blog post
-blogRouter.put('/:id', async (req, res) => {
-    const body = req.body;
+blogRouter.put('/:id',middleware.userExtractor, async (req, res) => {
 
-    const blog = {
-        title: body.title,
-        author: body.author,
-        url: body.url,
-        likes: body.likes,
-        blogs: body.blogs,
-    };
+    const token = req.token;
 
-    const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, blog, {
+    if (!token) {
+        return res.status(401).json({
+            error: 'Unauthorized: Token is missing'
+        });
+    }
+
+    const user = req.user;
+    const blog = await Blog.findById(req.params.id);
+
+    // Check if blog exists
+    if (!user) {
+        return res.status(404).json({
+            error: 'User not found'
+        });
+    }
+
+    // Check if blog exists
+    if (!blog) {
+        return res.status(404).json({
+            error: 'Blog not found'
+        });
+    }
+
+    // Check if the user is the owner of the blog
+    if (user._id.toString() !== blog.user.toString()) {
+        return res.status(403).json({
+            error: 'Forbidden: You are not allowed to delete this blog'
+        });
+    }
+    console.log('from update blog');
+    console.log('user ', user);
+    console.log('blog ', blog);
+
+    const updatedBlog = await Blog.findByIdAndUpdate(req.params.id, req.body, {
         new: true
     });
     res.json(updatedBlog);
